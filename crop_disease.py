@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template_string, send_from_directory
+from flask import Flask, request, jsonify, render_template_string
 from PIL import Image
 import random
 import os
@@ -8,7 +8,17 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
-class_names = ['Apple Scab', 'Black Rot', 'Cedar Apple Rust', 'Leaf Blight','Black rot','Mosaic virus','Leaf spot wilt']
+# Disease and solution mapping
+disease_solutions = {
+    'Apple Scab': 'Apply fungicides like Captan or Mancozeb. Ensure proper sanitation and pruning.',
+    'Black Rot': 'Remove and destroy infected fruits and branches. Use fungicide sprays during growing season.',
+    'Cedar Apple Rust': 'Use resistant varieties and apply fungicides like myclobutanil or mancozeb.',
+    'Leaf Blight': 'Avoid overhead watering. Use fungicides like chlorothalonil.',
+    'Black rot': 'Prune affected areas and apply copper-based fungicides.',
+    'Mosaic virus': 'Remove infected plants. Control insects like aphids which spread the virus.',
+    'Leaf spot wilt': 'Remove infected leaves. Apply neem oil or appropriate fungicides.',
+    'Subterranean clover stunt': 'Remove infected plants and control aphid population with insecticides.'
+}
 
 # HTML template
 html_template = """
@@ -102,7 +112,10 @@ html_template = """
         preview.style.display = 'block';
       }
 
-      resultDiv.innerText = "🌱 Prediction: " + result.prediction;
+      resultDiv.innerHTML = `
+        🌱 <strong>Prediction:</strong> ${result.prediction}<br>
+        💡 <strong>Solution:</strong> ${result.solution}
+      `;
     });
 
     imageInput.addEventListener('change', () => {
@@ -138,17 +151,17 @@ def predict():
         img = Image.open(file).convert("RGB")
         img.verify()
 
-        # Save image
         filename = secure_filename(file.filename)
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.seek(0)
         file.save(file_path)
 
-        # Random prediction
-        prediction = random.choice(class_names)
+        prediction = random.choice(list(disease_solutions.keys()))
+        solution = disease_solutions[prediction]
 
         return jsonify({
             'prediction': prediction,
+            'solution': solution,
             'image_url': f'/static/uploads/{filename}'
         })
     except Exception as e:
